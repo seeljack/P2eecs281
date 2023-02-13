@@ -21,6 +21,10 @@
 //need help with structure of code and how the layout should be
 
 
+
+//For when doing the battles make sure it keeps going until there are no more battles, instead of only seeing if batle when adding one
+
+
 #include <vector>
 #include <_types/_uint32_t.h>
 #include <iostream>
@@ -36,7 +40,6 @@
 
 #include "P2random.h"
 using namespace std;
-
 
 
 struct Deployment{
@@ -72,7 +75,6 @@ struct Planet{
     //priority queue Sith (The highest force is the top one)
     priority_queue<Deployment, vector<Deployment>, Sith_comparing> Sith;
 
-    int nothing;
 };
 
 
@@ -90,7 +92,8 @@ class Galaxy{
 
         vector<Planet> planets;
 
-        
+        uint32_t id_help_counter = 0;
+
         uint32_t CURRENT_TIMESTAMP = 0;
 
 
@@ -122,24 +125,24 @@ class Galaxy{
             Person.planet = static_cast<uint32_t>(stoi(the_data[3]));
             Person.force = static_cast<uint32_t>(stoi(the_data[4]));
             Person.quantity = static_cast<uint32_t>(stoi(the_data[5])); 
-            Person.id += 1;
+            Person.id += id_help_counter;
+            id_help_counter += 1;
 
             if(Person.time != CURRENT_TIMESTAMP){
                 time_change = true;
                 CURRENT_TIMESTAMP = Person.time;
             }
 
-            planets[Person.planet].nothing = 1;
 
             if(Person.side == 'J'){
                 planets[Person.planet].Jedi.push(Person);
-                cout << Person.time << ' ' << Person.side << " " << Person.general << " " << Person.planet << " " << Person.force << " " << Person.id << " " << Person.quantity << "\n";
+                // cout << Person.time << ' ' << Person.side << " " << Person.general << " " << Person.planet << " " << Person.force << " " << Person.id << " " << Person.quantity << "\n";
                 battle(planets[Person.planet], time_change);
 
             }
             else{
                 planets[Person.planet].Sith.push(Person);
-                cout << Person.time << ' ' << Person.side << " " << Person.general << " " << Person.planet << " " << Person.force << " " << Person.id << " " << Person.quantity << "\n";
+                // cout << Person.time << ' ' << Person.side << " " << Person.general << " " << Person.planet << " " << Person.force << " " << Person.id << " " << Person.quantity << "\n";
                 battle(planets[Person.planet], time_change);
             }
 
@@ -160,31 +163,47 @@ class Galaxy{
         }
 
         
-        void battle(Planet da_planet, bool time_change){
-            bool do_battle = false;
+        void battle(Planet& da_planet, bool time_change){
             if(time_change == true){
                 cout << "DO Median thingy" << "\n";
-                cout << da_planet.nothing;
             }
-            cout << "\n" << "\n";
-            if((!da_planet.Jedi.empty()) && (!da_planet.Sith.empty())){
-                if((da_planet.Jedi.top().force) <= (da_planet.Sith.top().force)){
-                    do_battle = true;
-                }
-            }
-            if(do_battle == true){
-                if(da_planet.Jedi.top().quantity < da_planet.Sith.top().quantity){
-                    uint32_t troops_lost = 2 * da_planet.Jedi.top().quantity;
 
-                    cout << "Lost " <<  troops_lost << " troops" << "\n";
-                    da_planet.Sith.top().quantity = da_planet.Sith.top().quantity - troops_lost;
+            while((!da_planet.Jedi.empty()) && (!da_planet.Sith.empty()) && ((da_planet.Jedi.top().force) <= (da_planet.Sith.top().force))){
+                
+                if(da_planet.Jedi.top().quantity < da_planet.Sith.top().quantity){
+                    uint32_t total_troops_lost = 2 * da_planet.Jedi.top().quantity;
+
+                    //the sith attacked
+                    if(da_planet.Sith.top().id < da_planet.Jedi.top().id){
+                        cout << "General " << da_planet.Sith.top().general << " battalion attacked" << " general " << da_planet.Jedi.top().general << " battalion on planet ";
+                        cout << da_planet.Sith.top().planet << ". "  << total_troops_lost << " troops were lost. " << " \n";
+                    }
+
+                    //the jedi attacked
+                    else{
+                        cout << "General " << da_planet.Jedi.top().general << " battalion attacked" << " general " << da_planet.Sith.top().general << " battalion on planet ";
+                        cout << da_planet.Sith.top().planet << ". "  << total_troops_lost << " troops were lost. " << " \n";
+                    }
+
+                    //Changing the quantity and poping the losing side
+                    da_planet.Sith.top().quantity = da_planet.Sith.top().quantity - da_planet.Jedi.top().quantity;
                     da_planet.Jedi.pop();
                 }
                 else if(da_planet.Sith.top().quantity < da_planet.Jedi.top().quantity){
-                    uint32_t troops_lost = 2 * da_planet.Sith.top().quantity;
+                    uint32_t total_troops_lost = 2 * da_planet.Sith.top().quantity;
 
-                    cout << "Lost " << troops_lost << "troops \n";
-                    da_planet.Jedi.top().quantity = da_planet.Jedi.top().quantity - troops_lost;
+                    //The Sith attacked
+                    if(da_planet.Sith.top().id < da_planet.Jedi.top().id){
+                        cout << "General " << da_planet.Sith.top().general << " battalion attacked" << " general " << da_planet.Jedi.top().general << " battalion on planet ";
+                        cout << da_planet.Sith.top().planet << ". "  << total_troops_lost << " troops were lost. " << " \n";
+                    }
+                    //The Jedi attacked
+                    else{
+                        cout << "General " << da_planet.Jedi.top().general << " battalion attacked" << " general " << da_planet.Sith.top().general << " battalion on planet ";
+                        cout << da_planet.Sith.top().planet << ". "  << total_troops_lost << " troops were lost. " << " \n";
+                    }
+                    //Changing the quantity and poping the losing side
+                    da_planet.Jedi.top().quantity = da_planet.Jedi.top().quantity - da_planet.Sith.top().quantity;
                     da_planet.Sith.pop();
                 }
                 else{
