@@ -30,6 +30,7 @@
 #include <iostream>
 #include <getopt.h>
 #include <string>
+#include <sys/types.h>
 #include <vector>
 #include <algorithm>
 #include <cstdio>
@@ -75,6 +76,10 @@ struct Planet{
     //priority queue Sith (The highest force is the top one)
     priority_queue<Deployment, vector<Deployment>, Sith_comparing> Sith;
 
+    uint32_t total_count_lost = 0;
+
+    uint32_t  battles_on_planet = 0;
+
 };
 
 
@@ -106,7 +111,6 @@ class Galaxy{
         // Reads in data one line at a time and puts all the data into the private member variables
         void interpret(string data, Deployment Person){
 
-            bool time_change = false;
 
             vector<string> the_data;
             //splits the string up so you can read in all the numbers
@@ -128,22 +132,20 @@ class Galaxy{
             Person.id += id_help_counter;
             id_help_counter += 1;
 
-            if(Person.time != CURRENT_TIMESTAMP){
-                time_change = true;
-                CURRENT_TIMESTAMP = Person.time;
-            }
 
 
             if(Person.side == 'J'){
                 planets[Person.planet].Jedi.push(Person);
+
                 // cout << Person.time << ' ' << Person.side << " " << Person.general << " " << Person.planet << " " << Person.force << " " << Person.id << " " << Person.quantity << "\n";
-                battle(planets[Person.planet], time_change);
+                battle(planets[Person.planet], Person.time);
 
             }
             else{
                 planets[Person.planet].Sith.push(Person);
+
                 // cout << Person.time << ' ' << Person.side << " " << Person.general << " " << Person.planet << " " << Person.force << " " << Person.id << " " << Person.quantity << "\n";
-                battle(planets[Person.planet], time_change);
+                battle(planets[Person.planet], Person.time);
             }
 
         }
@@ -163,9 +165,16 @@ class Galaxy{
         }
 
         
-        void battle(Planet& da_planet, bool time_change){
-            if(time_change == true){
-                cout << "DO Median thingy" << "\n";
+        void battle(Planet& da_planet, uint32_t time){
+            if(time != CURRENT_TIMESTAMP){
+                for(uint32_t i = 0; i < planets.size(); i++){
+                    if(planets[i].battles_on_planet > 0){
+                        cout << "Median troops lost on planet " << i << " at time " <<  CURRENT_TIMESTAMP << " is " << planets[i].total_count_lost / planets[i].battles_on_planet << "\n";
+                        planets[i].total_count_lost = 0;
+                        planets[i].battles_on_planet = 0;
+                    }
+                }
+                CURRENT_TIMESTAMP = time;
             }
 
             while((!da_planet.Jedi.empty()) && (!da_planet.Sith.empty()) && ((da_planet.Jedi.top().force) <= (da_planet.Sith.top().force))){
@@ -188,6 +197,10 @@ class Galaxy{
                     //Changing the quantity and poping the losing side
                     da_planet.Sith.top().quantity = da_planet.Sith.top().quantity - da_planet.Jedi.top().quantity;
                     da_planet.Jedi.pop();
+
+                    //Add data for the median
+                    da_planet.battles_on_planet += 1;
+                    da_planet.total_count_lost += total_troops_lost;
                 }
                 else if(da_planet.Sith.top().quantity < da_planet.Jedi.top().quantity){
                     uint32_t total_troops_lost = 2 * da_planet.Sith.top().quantity;
@@ -205,12 +218,18 @@ class Galaxy{
                     //Changing the quantity and poping the losing side
                     da_planet.Jedi.top().quantity = da_planet.Jedi.top().quantity - da_planet.Sith.top().quantity;
                     da_planet.Sith.pop();
+
+                    //Add data for the median
+                    da_planet.battles_on_planet += 1;
+                    da_planet.total_count_lost += total_troops_lost;
                 }
                 else{
-                    uint32_t troops_lost = 2 * da_planet.Sith.top().quantity;
-                    cout << "Lost " << troops_lost << "troops \n";
+                    uint32_t total_troops_lost = 2 * da_planet.Sith.top().quantity;
+                    cout << "Lost " << total_troops_lost << "troops \n";
                     da_planet.Jedi.pop();
                     da_planet.Sith.pop();
+                    da_planet.battles_on_planet += 1;
+                    da_planet.total_count_lost += total_troops_lost;
                 }
             }
             // if(planets[static_cast<uint32_t>(0)].Jedi.top().time){
